@@ -1,0 +1,11 @@
+---
+- hosts: all
+  become: true
+  gather_facts: true
+  tasks:
+    - name: Install Stress
+      yum:
+        name: http://ftp.tu-chemnitz.de/pub/linux/dag/redhat/el6/en/x86_64/rpmforge/RPMS/stress-1.0.2-1.el6.rf.x86_64.rpm
+        state: present
+    - name: Run Stress
+      shell: stress -c 4 -i 4 -m 4 -d 2 --vm-bytes 512M -t 300

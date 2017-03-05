@@ -1,0 +1,71 @@
+---
+- hosts: all
+  become: true
+  gather_facts: true
+  tasks:
+    - name: Install EPEL
+      yum:
+        name: http://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
+        state: present
+    - name: Check for bundle
+      stat:
+        path: ~/ansible-tower-setup-bundle-3.0.3-2.el7/
+      register: bundle_exists
+    - name: Get Tower Bundle
+      unarchive:
+        src: https://releases.ansible.com/ansible-tower/setup-bundle/ansible-tower-setup-bundle-3.0.3-2.el7.tar.gz
+        dest: ~/
+        remote_src: True
+      when: bundle_exists.stat.exists != True
+    - name: Remove inventory
+      file:
+        path: ~/ansible-tower-setup-bundle-3.0.3-2.el7/inventory
+        state: absent
+      when: bundle_exists.stat.exists != True
+    - name: Create inventory
+      file:
+        path: ~/ansible-tower-setup-bundle-3.0.3-2.el7/inventory
+        state: touch
+      when: bundle_exists.stat.exists != True
+    - name: Add tower password
+      blockinfile:
+        marker: ""
+        block: |
+          [primary]
+          localhost ansible_connection=local
+
+          [secondary]
+
+          [database]
+ 
+          [all:vars]
+          admin_password='tower'
+          redis_password='tower'
+
+          pg_host=''
+          pg_port=''
+
+          pg_database='awx'
+          pg_username='awx'
+          pg_password='tower'
+        dest: ~/ansible-tower-setup-bundle-3.0.3-2.el7/inventory
+      when: bundle_exists.stat.exists != True
+    - name: Run Tower Setup
+      shell: ~/ansible-tower-setup-bundle-3.0.3-2.el7/setup.sh
+      when: bundle_exists.stat.exists != True
+    - name: Add keys
+      authorized_key:
+        user: vagrant
+        state: present
+        key: '{{ item }}'
+      with_items:
+        - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC12Zn+Xbnw4K017LS6aVr75mwkkbNUbSbcLRBnNlNO7R/fe3852kLfJojp59Gau9HM1lMDYQJNU30+xWd9IucjPukD41f5UsaGIDgwVa9aJRuvPKbJCluNqkCZ1fAo0BSyeIb0+DKR+ujE23QDo7W/3nV5Dyh3NsCjZen4Xiv+bpKlW3H40rFA19xyflMyOWUKFqkLR0nF2yg/b342BmTYaxhQHWrJYjdcU32tg2xmlegSHxJlzeIVfC7L3arck1y6Op6qxpMZKQHDqVeS/ZVQxdLS3LQmEDJyLh7KiISBjWdP8Qsfy8mqgGELjaNnHzajEop95E/G1kwWjStVYvHn rmelero@mbp.local
+        - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDNvRDfVa+U0rn1VgJfQaii8nOQx+2v7w/EhTSZ5xkqCWrLrPQlR9ReZe2JBuV7ADY7eO3cqeMigFZMEurd4bARoywL3QIdLKhiXOuCAJ8Z5GtiG4J01PHIOG9JNcG5dIxAiuCRm4HOONBRgYI0Jb06I2+BPR71yukTg4yOXPrgxd3O5iBAWhBCHAJ+eo8aATlRYaoqboPQSnnSIgt0bCnW6CB/3N+2BhHYr4mp5DobqoOmUhPryGHzZ5R0UDmrqyQC4ZuZKKio3un7CVMMgiZFNTeBZ2C+Bb0/3mpm8+KTrPT5WvLQaaYpNgA8h5R8vxJXlE4x2Eev+6XJtYtOYXmD root@infra-vhost1
+    - name: Add keys
+      authorized_key:
+        user: root
+        state: present
+        key: '{{ item }}'
+      with_items:
+        - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC12Zn+Xbnw4K017LS6aVr75mwkkbNUbSbcLRBnNlNO7R/fe3852kLfJojp59Gau9HM1lMDYQJNU30+xWd9IucjPukD41f5UsaGIDgwVa9aJRuvPKbJCluNqkCZ1fAo0BSyeIb0+DKR+ujE23QDo7W/3nV5Dyh3NsCjZen4Xiv+bpKlW3H40rFA19xyflMyOWUKFqkLR0nF2yg/b342BmTYaxhQHWrJYjdcU32tg2xmlegSHxJlzeIVfC7L3arck1y6Op6qxpMZKQHDqVeS/ZVQxdLS3LQmEDJyLh7KiISBjWdP8Qsfy8mqgGELjaNnHzajEop95E/G1kwWjStVYvHn rmelero@mbp.local
+        - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDNvRDfVa+U0rn1VgJfQaii8nOQx+2v7w/EhTSZ5xkqCWrLrPQlR9ReZe2JBuV7ADY7eO3cqeMigFZMEurd4bARoywL3QIdLKhiXOuCAJ8Z5GtiG4J01PHIOG9JNcG5dIxAiuCRm4HOONBRgYI0Jb06I2+BPR71yukTg4yOXPrgxd3O5iBAWhBCHAJ+eo8aATlRYaoqboPQSnnSIgt0bCnW6CB/3N+2BhHYr4mp5DobqoOmUhPryGHzZ5R0UDmrqyQC4ZuZKKio3un7CVMMgiZFNTeBZ2C+Bb0/3mpm8+KTrPT5WvLQaaYpNgA8h5R8vxJXlE4x2Eev+6XJtYtOYXmD root@infra-vhost1
